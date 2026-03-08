@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Child Safety Reporter // Secure Network</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#000000; --bg2:#080000; --bg3:#0d0000;
+  --red:#cc0000; --red-hi:#ff2200; --red-lo:#660000; --red-dim:#3a0000;
+  --amber:#ffaa00; --amber-hi:#ffd000;
+  --muted:#552222; --text:#cc4422; --soft:#884444;
+  --D:'Orbitron',monospace; --M:'Share Tech Mono',monospace; --V:'VT323',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--M);line-height:1.6;overflow-x:hidden;cursor:crosshair}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 4px);pointer-events:none;z-index:9000}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--red) 30%,var(--red-hi) 50%,var(--red) 70%,transparent);box-shadow:0 0 16px var(--red);z-index:9001}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:#000}
+::-webkit-scrollbar-thumb{background:var(--red-lo)}
+#rain{position:fixed;inset:0;opacity:.14;z-index:0;pointer-events:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px var(--red)}50%{box-shadow:0 0 24px var(--red-hi),0 0 48px var(--red)}}
+@keyframes eyeGlow{0%,100%{text-shadow:0 0 8px var(--amber)}50%{text-shadow:0 0 24px var(--amber-hi),0 0 48px var(--amber)}}
+@keyframes ticker{0%{transform:translateX(100%)}100%{transform:translateX(-200%)}}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:.8rem 2.5rem;background:rgba(0,0,0,.97);border-bottom:1px solid var(--red-lo);box-shadow:0 0 24px rgba(204,0,0,.15)}
+.logo{display:flex;align-items:center;gap:.8rem;text-decoration:none}
+.logo-text{font-family:var(--D);font-size:.68rem;font-weight:700;color:var(--red);line-height:1.2;letter-spacing:.1em}
+.logo-text em{font-style:normal;color:var(--amber);animation:eyeGlow 2.5s ease-in-out infinite}
+.nav-links{display:flex;gap:1.5rem;list-style:none;align-items:center}
+.nav-links a{font-family:var(--D);font-size:.6rem;letter-spacing:.15em;color:var(--red-lo);text-decoration:none;transition:color .2s;text-transform:uppercase}
+.nav-links a:hover{color:var(--red-hi);text-shadow:0 0 10px var(--red)}
+.nav-cta{color:var(--amber)!important;border:1px solid rgba(255,170,0,.5);padding:.35rem .9rem}
+.nav-cta:hover{background:rgba(255,170,0,.08)!important;text-shadow:0 0 8px var(--amber)!important}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none}
+.hamburger span{width:22px;height:1px;background:var(--red);display:block}
+.mob-nav{display:none;position:fixed;inset:0;top:56px;background:rgba(0,0,0,.99);border-top:1px solid var(--red-lo);z-index:499;flex-direction:column;align-items:center;justify-content:center;gap:2rem}
+.mob-nav.open{display:flex}
+.mob-nav a{font-family:var(--D);font-size:1rem;color:var(--red);text-decoration:none;letter-spacing:.15em}
+
+#home{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:7rem 2.5rem 4rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;z-index:1;background-image:linear-gradient(rgba(204,0,0,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(204,0,0,.05) 1px,transparent 1px);background-size:50px 50px}
+.corner{position:absolute;width:50px;height:50px;z-index:2}
+.c-tl{top:80px;left:20px;border-top:1px solid var(--red-lo);border-left:1px solid var(--red-lo)}
+.c-tr{top:80px;right:20px;border-top:1px solid var(--red-lo);border-right:1px solid var(--red-lo)}
+.c-bl{bottom:20px;left:20px;border-bottom:1px solid var(--red-lo);border-left:1px solid var(--red-lo)}
+.c-br{bottom:20px;right:20px;border-bottom:1px solid var(--red-lo);border-right:1px solid var(--red-lo)}
+.hero-inner{position:relative;z-index:3;max-width:980px}
+.hero-tag{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--D);font-size:.6rem;letter-spacing:.2em;color:var(--red);border:1px solid var(--red-lo);padding:.3rem .9rem;margin-bottom:1.5rem;animation:fadeUp .8s ease both}
+.hero-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);animation:blink 1.2s step-end infinite}
+.hero-title{font-family:var(--D);font-size:clamp(2.2rem,6vw,5rem);font-weight:900;line-height:.95;letter-spacing:.03em;color:var(--red);text-shadow:0 0 30px rgba(204,0,0,.6);margin-bottom:.75rem;animation:fadeUp .8s ease .2s both}
+.hero-title .amber{color:var(--amber);animation:eyeGlow 2.5s ease-in-out infinite}
+.hero-sub{font-family:var(--V);font-size:1.5rem;letter-spacing:.1em;color:var(--red-lo);margin-bottom:1.5rem;animation:fadeUp .8s ease .4s both}
+.hero-desc{font-size:.82rem;color:var(--soft);max-width:580px;line-height:1.8;border-left:2px solid var(--red-lo);padding-left:1rem;margin-bottom:2.5rem;animation:fadeUp .8s ease .6s both}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap;animation:fadeUp .8s ease .8s both}
+.btn-red{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--D);font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;padding:.8rem 1.8rem;border:1px solid var(--red);background:rgba(204,0,0,.15);color:var(--red-hi);cursor:pointer;transition:all .2s;box-shadow:0 0 16px rgba(204,0,0,.25)}
+.btn-red:hover{background:rgba(204,0,0,.28);box-shadow:0 0 32px rgba(255,34,0,.5);transform:translateY(-1px)}
+.btn-ghost{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--D);font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;padding:.8rem 1.8rem;border:1px solid var(--red-lo);background:transparent;color:var(--amber);cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:var(--amber);box-shadow:0 0 16px rgba(255,170,0,.2);transform:translateY(-1px)}
+.hero-stats{display:flex;gap:2.5rem;flex-wrap:wrap;margin-top:3rem;animation:fadeUp .8s ease 1s both}
+.stat{border-left:2px solid var(--red-lo);padding-left:1rem}
+.stat-n{font-family:var(--D);font-size:1.6rem;font-weight:900;color:var(--red);text-shadow:0 0 16px rgba(204,0,0,.6)}
+.stat-l{font-size:.62rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+
+.ticker-wrap{overflow:hidden;background:rgba(204,0,0,.06);border-top:1px solid var(--red-lo);border-bottom:1px solid var(--red-lo);padding:.4rem 0;position:relative;z-index:2}
+.ticker-inner{display:inline-block;white-space:nowrap;animation:ticker 32s linear infinite;font-size:.65rem;letter-spacing:.15em;color:var(--red-lo);font-family:var(--D)}
+
+.warn-bar{display:flex;align-items:flex-start;gap:1.5rem;background:rgba(204,0,0,.06);border:1px solid var(--red);border-left:4px solid var(--red-hi);padding:1.2rem 2.5rem;position:relative;z-index:2}
+.warn-bar svg{flex-shrink:0;margin-top:2px}
+.warn-title{font-family:var(--D);font-size:.68rem;letter-spacing:.15em;color:var(--amber);margin-bottom:.35rem;text-shadow:0 0 8px rgba(255,170,0,.4)}
+.warn-text{font-size:.78rem;color:var(--soft);line-height:1.6}
+
+section{padding:5rem 2.5rem;position:relative;z-index:2}
+#report{background:var(--bg2)}
+#emergency{background:var(--bg)}
+#education{background:var(--bg3)}
+#privacy{background:var(--bg)}
+.sec-tag{font-family:var(--M);font-size:.68rem;color:var(--red-lo);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.5rem;display:flex;align-items:center;gap:.6rem}
+.sec-tag::before{content:'//';color:var(--red)}
+.sec-title{font-family:var(--D);font-size:clamp(1.5rem,3.5vw,2.4rem);font-weight:900;letter-spacing:.04em;color:var(--red);text-shadow:0 0 16px rgba(204,0,0,.4);line-height:1.1;margin-bottom:.6rem}
+.sec-desc{font-size:.8rem;color:var(--soft);max-width:540px;line-height:1.8;margin-bottom:3rem}
+
+.form-box{max-width:800px;background:rgba(204,0,0,.03);border:1px solid var(--red-lo);padding:2.5rem;position:relative}
+.form-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red-lo),var(--red),var(--red-lo),transparent)}
+.form-head{display:flex;align-items:center;gap:.75rem;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid rgba(204,0,0,.12)}
+.f-dots{display:flex;gap:6px}
+.fd{width:10px;height:10px;border-radius:50%}
+.fd-r{background:var(--red-hi);box-shadow:0 0 6px var(--red-hi)}
+.fd-a{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.fd-d{background:var(--red-dim)}
+.form-title{font-family:var(--M);font-size:.72rem;color:var(--red-lo);letter-spacing:.1em}
+.enc-badge{display:inline-flex;align-items:center;gap:.5rem;border:1px solid rgba(255,170,0,.35);color:var(--amber);padding:.35rem .9rem;font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;font-family:var(--D);margin-bottom:1.5rem}
+.anon-row{display:flex;align-items:center;gap:.75rem;background:rgba(204,0,0,.04);border:1px solid rgba(204,0,0,.15);padding:.85rem 1.2rem;margin-bottom:2rem;cursor:pointer;transition:border-color .2s}
+.anon-row:hover{border-color:var(--red-lo)}
+.tog{width:38px;height:20px;background:var(--red-lo);border:1px solid var(--red);position:relative;flex-shrink:0;box-shadow:0 0 8px rgba(204,0,0,.3);transition:background .3s}
+.tog::after{content:'';position:absolute;right:3px;top:2px;width:14px;height:14px;background:var(--amber);box-shadow:0 0 6px var(--amber);transition:all .3s}
+.tog.off{background:var(--red-dim);border-color:var(--muted)}
+.tog.off::after{right:auto;left:3px;background:#553333;box-shadow:none}
+.anon-label strong{font-size:.75rem;display:block;font-family:var(--D);font-weight:600;letter-spacing:.05em;color:var(--red)}
+.anon-label span{font-size:.7rem;color:var(--muted)}
+.fgrid{display:grid;gap:1.2rem}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+.field{display:flex;flex-direction:column;gap:.4rem}
+.field label{font-family:var(--D);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.req{color:var(--amber)}
+.field input,.field select,.field textarea{background:rgba(0,0,0,.7);border:1px solid rgba(204,0,0,.2);color:var(--red);font-family:var(--M);font-size:.84rem;padding:.72rem 1rem;outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--red);box-shadow:0 0 12px rgba(204,0,0,.12)}
+.field input::placeholder,.field textarea::placeholder{color:rgba(204,0,0,.2)}
+.field select option{background:#080000;color:var(--red)}
+.field textarea{resize:vertical;min-height:120px}
+.upload-zone{border:1px dashed rgba(204,0,0,.3);padding:1.8rem;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover{border-color:var(--red);background:rgba(204,0,0,.04)}
+.upload-zone input{display:none}
+.upload-txt{font-size:.8rem;color:var(--muted)}
+.upload-txt strong{color:var(--red)}
+.upload-note{font-size:.65rem;color:rgba(204,0,0,.3);margin-top:.3rem}
+.contact-field{display:none}
+.form-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-top:.5rem}
+.form-legal{font-size:.68rem;color:rgba(204,0,0,.3);max-width:340px;line-height:1.6}
+.success{display:none;background:rgba(204,0,0,.06);border:1px solid var(--red);padding:1.5rem;text-align:center;margin-top:1.5rem}
+.success.show{display:block}
+.success h3{font-family:var(--D);font-size:.95rem;color:var(--amber);letter-spacing:.1em;margin-bottom:.4rem}
+.success p{font-size:.78rem;color:var(--soft)}
+
+.org-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem}
+.org-card{background:rgba(204,0,0,.03);border:1px solid rgba(204,0,0,.12);padding:1.5rem;transition:all .3s;position:relative;overflow:hidden}
+.org-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--red-lo),transparent);opacity:0;transition:opacity .3s}
+.org-card:hover{border-color:var(--red-lo);box-shadow:0 0 16px rgba(204,0,0,.08);transform:translateY(-2px)}
+.org-card:hover::before,.org-card.hot::before{opacity:1}
+.org-card.hot{border-color:rgba(255,34,0,.3)}
+.org-card.hot::before{background:linear-gradient(90deg,var(--red-hi),var(--amber),transparent)}
+.org-flag{font-size:1.4rem;margin-bottom:.5rem}
+.org-name{font-family:var(--D);font-size:.78rem;font-weight:700;color:var(--red);margin-bottom:.2rem;letter-spacing:.05em}
+.org-region{font-size:.62rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.7rem}
+.org-desc{font-size:.76rem;color:var(--soft);line-height:1.6;margin-bottom:1rem}
+.org-links{display:flex;flex-direction:column;gap:.4rem}
+.org-a{font-size:.74rem;color:var(--red-lo);text-decoration:none;font-family:var(--M);transition:color .2s;display:flex;align-items:center;gap:.4rem}
+.org-a:hover{color:var(--red-hi);text-shadow:0 0 6px var(--red)}
+.org-a.hl{color:var(--amber)}
+.org-a.hl:hover{color:var(--amber-hi)}
+
+.edu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem}
+.edu-card{background:rgba(0,0,0,.4);border:1px solid rgba(204,0,0,.1);padding:1.75rem;transition:border-color .3s}
+.edu-card:hover{border-color:rgba(204,0,0,.3)}
+.edu-n{font-family:var(--D);font-size:1.8rem;font-weight:900;color:rgba(204,0,0,.08);line-height:1;margin-bottom:.6rem}
+.edu-card h3{font-family:var(--D);font-size:.76rem;font-weight:700;color:var(--red);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.6rem}
+.edu-card p{font-size:.78rem;color:var(--soft);line-height:1.7}
+.signs-box{margin-top:2.5rem;background:rgba(204,0,0,.05);border:1px solid rgba(204,0,0,.2);padding:2rem}
+.signs-title{font-family:var(--D);font-size:.8rem;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 8px rgba(255,170,0,.4);margin-bottom:1.2rem}
+.signs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.6rem}
+.sign{padding:.6rem .8rem;background:rgba(0,0,0,.3);border-left:2px solid rgba(204,0,0,.4);font-size:.76rem;color:var(--soft);line-height:1.5}
+
+.priv-grid{display:grid;gap:1rem;max-width:780px}
+.priv-item{display:grid;grid-template-columns:36px 1fr;gap:1.2rem;align-items:start;padding:1.2rem;background:rgba(204,0,0,.02);border:1px solid rgba(204,0,0,.08);transition:border-color .2s}
+.priv-item:hover{border-color:rgba(204,0,0,.22)}
+.priv-n{font-family:var(--D);font-size:1.1rem;font-weight:900;color:rgba(204,0,0,.18);line-height:1}
+.priv-item h3{font-family:var(--D);font-size:.74rem;font-weight:700;color:var(--red);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.35rem}
+.priv-item p{font-size:.76rem;color:var(--soft);line-height:1.7}
+
+footer{background:#000;border-top:1px solid rgba(204,0,0,.18);padding:2rem 2.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;position:relative;z-index:2}
+.foot-logo{font-family:var(--D);font-size:.72rem;font-weight:700;color:var(--red);letter-spacing:.1em;text-shadow:0 0 8px rgba(204,0,0,.4)}
+.foot-logo em{font-style:normal;color:var(--amber)}
+.foot-copy{font-size:.62rem;color:var(--muted);margin-top:.2rem;font-family:var(--M)}
+.foot-nav{display:flex;gap:1.5rem;flex-wrap:wrap}
+.foot-nav a{font-size:.62rem;color:var(--muted);text-decoration:none;font-family:var(--M);letter-spacing:.1em;transition:color .2s}
+.foot-nav a:hover{color:var(--red);text-shadow:0 0 6px var(--red)}
+
+#music{position:fixed;bottom:24px;right:24px;z-index:800;background:rgba(4,0,0,.97);border:1px solid rgba(204,0,0,.4);padding:14px 16px;width:230px;box-shadow:0 8px 32px rgba(0,0,0,.8),0 0 20px rgba(204,0,0,.12);font-family:var(--M)}
+.music-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.music-label{font-size:.62rem;color:var(--red);letter-spacing:.15em}
+.music-close{background:none;border:none;color:var(--red-lo);cursor:pointer;font-size:.9rem;line-height:1}
+.music-close:hover{color:var(--red)}
+.music-modes{display:flex;gap:8px;margin-bottom:10px}
+.mmode{flex:1;padding:6px 4px;border:1px solid var(--red-lo);background:rgba(204,0,0,.08);color:var(--red-lo);font-family:var(--M);font-size:.65rem;cursor:pointer;letter-spacing:.08em;transition:all .2s}
+.mmode.a-sad{border-color:var(--red);color:var(--red-hi);background:rgba(204,0,0,.2)}
+.mmode.a-agg{border-color:var(--amber);color:var(--amber);background:rgba(255,170,0,.1)}
+.music-track{background:rgba(0,0,0,.6);border:1px solid rgba(204,0,0,.15);padding:8px 10px;margin-bottom:10px}
+#tname{font-size:.66rem;color:var(--red);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tsub{font-size:.58rem;color:var(--red-lo);letter-spacing:.06em}
+.music-play{width:100%;padding:8px;background:rgba(204,0,0,.12);border:1px solid rgba(204,0,0,.4);color:var(--red-hi);font-family:var(--M);font-size:.68rem;letter-spacing:.1em;cursor:pointer;transition:all .2s}
+.music-play:hover{background:rgba(204,0,0,.25);box-shadow:0 0 16px rgba(204,0,0,.3)}
+.music-note{text-align:center;font-size:.55rem;color:var(--red-dim);margin-top:6px;letter-spacing:.06em}
+
+#eyebtn{position:fixed;bottom:24px;left:24px;z-index:800;background:rgba(4,0,0,.95);border:1px solid rgba(204,0,0,.35);color:var(--red-lo);font-family:var(--M);font-size:.65rem;letter-spacing:.1em;padding:.5rem 1rem;cursor:pointer;transition:all .25s;box-shadow:0 0 10px rgba(204,0,0,.12)}
+#eyebtn:hover{border-color:var(--red);color:var(--red-hi);box-shadow:0 0 18px rgba(204,0,0,.25)}
+
+/* EYE COMFORT */
+body.ec{background:#f4ede4!important;color:#2a1508!important;filter:brightness(.93)}
+body.ec::before{opacity:.3}
+body.ec::after{display:none}
+body.ec #rain{display:none}
+body.ec .hero-grid{background-image:linear-gradient(rgba(80,40,20,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(80,40,20,.05) 1px,transparent 1px)!important}
+body.ec nav{background:rgba(244,237,228,.97)!important;border-bottom-color:rgba(80,40,20,.15)!important;box-shadow:none!important}
+body.ec .logo-text{color:#3a1a0a!important;text-shadow:none!important}
+body.ec .logo-text em{color:#8b4a0f!important;animation:none!important;text-shadow:none!important}
+body.ec .nav-links a{color:#7a4a2a!important}
+body.ec .nav-links a:hover{color:#3a1a0a!important;text-shadow:none!important}
+body.ec .nav-cta{color:#8b4a0f!important;border-color:#c4855a!important}
+body.ec #home,body.ec section{background:inherit!important}
+body.ec #report{background:#ece5dc!important}
+body.ec #education{background:#e8e0d6!important}
+body.ec .ticker-wrap{background:rgba(80,40,20,.06)!important;border-color:rgba(80,40,20,.15)!important}
+body.ec .ticker-inner{color:rgba(80,40,20,.4)!important}
+body.ec .warn-bar{background:rgba(139,58,15,.06)!important;border-color:#c4855a!important;border-left-color:#8b4a0f!important}
+body.ec .warn-title{color:#8b4a0f!important;text-shadow:none!important}
+body.ec .warn-text{color:#5a3a22!important}
+body.ec .corner{border-color:rgba(80,40,20,.15)!important}
+body.ec .hero-tag{color:#8b4a0f!important;border-color:rgba(139,74,15,.3)!important}
+body.ec .hero-tag::before{background:#c4855a!important;box-shadow:none!important}
+body.ec .hero-title{color:#2a1508!important;text-shadow:none!important}
+body.ec .hero-title .amber{color:#8b4a0f!important;animation:none!important;text-shadow:none!important}
+body.ec .hero-sub{color:#9a6a4a!important}
+body.ec .hero-desc{color:#5a3a22!important;border-left-color:#c4855a!important}
+body.ec .stat-n{color:#2a1508!important;text-shadow:none!important}
+body.ec .stat-l{color:#9a6a4a!important}
+body.ec .stat{border-left-color:#c4855a!important}
+body.ec .btn-red{background:rgba(139,74,15,.1)!important;color:#8b4a0f!important;border-color:#c4855a!important;box-shadow:none!important}
+body.ec .btn-ghost{color:#6a4a2a!important;border-color:rgba(106,74,42,.4)!important}
+body.ec .sec-tag{color:#9a6a4a!important}
+body.ec .sec-tag::before{color:#c4855a!important}
+body.ec .sec-title{color:#2a1508!important;text-shadow:none!important}
+body.ec .sec-desc{color:#5a3a22!important}
+body.ec .form-box{background:rgba(255,255,255,.5)!important;border-color:rgba(139,74,15,.25)!important}
+body.ec .form-box::before{background:linear-gradient(90deg,transparent,#c4855a,#8b4a0f,#c4855a,transparent)!important}
+body.ec .enc-badge{color:#5a7a3a!important;border-color:rgba(90,122,58,.4)!important}
+body.ec .anon-row{background:rgba(139,74,15,.05)!important;border-color:rgba(139,74,15,.2)!important}
+body.ec .tog{background:#c4855a!important;border-color:#8b4a0f!important;box-shadow:none!important}
+body.ec .tog::after{background:#fff4ec!important;box-shadow:none!important}
+body.ec .anon-label strong{color:#2a1508!important}
+body.ec .anon-label span{color:#9a6a4a!important}
+body.ec .field label{color:#9a6a4a!important}
+body.ec .req{color:#8b4a0f!important}
+body.ec .field input,body.ec .field select,body.ec .field textarea{background:rgba(255,255,255,.8)!important;border-color:rgba(139,74,15,.2)!important;color:#2a1508!important}
+body.ec .field input:focus,body.ec .field select:focus,body.ec .field textarea:focus{border-color:#8b4a0f!important;box-shadow:none!important}
+body.ec .field select option{background:#f4ede4!important;color:#2a1508!important}
+body.ec .upload-zone{border-color:rgba(139,74,15,.25)!important;background:rgba(255,255,255,.3)!important}
+body.ec .upload-txt{color:#5a3a22!important}
+body.ec .upload-txt strong{color:#8b4a0f!important}
+body.ec .org-card{background:rgba(255,255,255,.45)!important;border-color:rgba(139,74,15,.15)!important}
+body.ec .org-card:hover{box-shadow:0 2px 10px rgba(80,40,20,.1)!important}
+body.ec .org-name{color:#2a1508!important}
+body.ec .org-region{color:#9a6a4a!important}
+body.ec .org-desc{color:#5a3a22!important}
+body.ec .org-a{color:#7a5a3a!important}
+body.ec .org-a:hover{color:#2a1508!important;text-shadow:none!important}
+body.ec .org-a.hl{color:#8b4a0f!important}
+body.ec .edu-card{background:rgba(255,255,255,.35)!important;border-color:rgba(139,74,15,.12)!important}
+body.ec .edu-n{color:rgba(80,40,20,.08)!important}
+body.ec .edu-card h3{color:#2a1508!important}
+body.ec .edu-card p{color:#5a3a22!important}
+body.ec .signs-box{background:rgba(139,74,15,.05)!important;border-color:rgba(139,74,15,.2)!important}
+body.ec .signs-title{color:#8b4a0f!important;text-shadow:none!important}
+body.ec .sign{background:rgba(255,255,255,.3)!important;border-left-color:rgba(139,74,15,.35)!important;color:#5a3a22!important}
+body.ec .priv-item{background:rgba(255,255,255,.35)!important;border-color:rgba(139,74,15,.1)!important}
+body.ec .priv-n{color:rgba(80,40,20,.15)!important}
+body.ec .priv-item h3{color:#2a1508!important}
+body.ec .priv-item p{color:#5a3a22!important}
+body.ec footer{background:#e8e0d4!important;border-top-color:rgba(80,40,20,.12)!important}
+body.ec .foot-logo{color:#2a1508!important;text-shadow:none!important}
+body.ec .foot-logo em{color:#8b4a0f!important;text-shadow:none!important}
+body.ec .foot-copy{color:#9a6a4a!important}
+body.ec .foot-nav a{color:#9a6a4a!important}
+body.ec .foot-nav a:hover{color:#2a1508!important;text-shadow:none!important}
+body.ec .mob-nav{background:rgba(244,237,228,.99)!important}
+body.ec .mob-nav a{color:#2a1508!important;text-shadow:none!important}
+body.ec #music{background:rgba(244,237,228,.97)!important;border-color:rgba(139,74,15,.3)!important;box-shadow:0 2px 12px rgba(80,40,20,.12)!important}
+body.ec .music-label{color:#8b4a0f!important}
+body.ec .music-close{color:#c4855a!important}
+body.ec .mmode{background:rgba(139,74,15,.06)!important;border-color:rgba(139,74,15,.2)!important;color:#9a6a4a!important}
+body.ec .mmode.a-sad{border-color:#8b4a0f!important;color:#8b4a0f!important;background:rgba(139,74,15,.12)!important}
+body.ec .mmode.a-agg{border-color:#c4855a!important;color:#c4855a!important}
+body.ec .music-track{background:rgba(255,255,255,.5)!important;border-color:rgba(139,74,15,.15)!important}
+body.ec #tname{color:#2a1508!important}
+body.ec #tsub{color:#9a6a4a!important}
+body.ec .music-play{background:rgba(139,74,15,.1)!important;border-color:rgba(139,74,15,.4)!important;color:#8b4a0f!important}
+body.ec .music-note{color:rgba(80,40,20,.3)!important}
+body.ec #eyebtn{background:rgba(244,237,228,.95)!important;border-color:rgba(139,74,15,.3)!important;color:#8b4a0f!important;box-shadow:0 1px 8px rgba(80,40,20,.1)!important}
+
+@media(max-width:768px){
+  nav{padding:.7rem 1.5rem}
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  #home,section{padding:3.5rem 1.5rem}
+  #home{padding-top:6rem}
+  .warn-bar{padding:1rem 1.5rem;flex-direction:column}
+  .frow{grid-template-columns:1fr}
+  .form-box{padding:1.5rem}
+  .form-foot{flex-direction:column}
+  footer{padding:1.5rem;flex-direction:column}
+  .corner{display:none}
+  #music{width:200px;right:12px;bottom:70px}
+  #eyebtn{left:12px;bottom:12px;font-size:.6rem;padding:.4rem .8rem}
+}
+</style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+<button id="eyebtn" onclick="toggleEC()">👁 EYE COMFORT</button>
+
+<!-- NAV -->
+<nav>
+  <a href="#home" class="logo">
+    <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+      <path d="M17 2L3 8v9c0 8 5.5 15.5 14 17.5C25.5 32.5 31 25 31 17V8L17 2z" fill="rgba(204,0,0,.06)" stroke="#660000" stroke-width="1.2"/>
+      <path d="M11 17l4 4 8-8" stroke="#cc0000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="17" cy="11" r="2.5" fill="#ffaa00" opacity=".7"/>
+    </svg>
+    <div class="logo-text">CHILD SAFETY<br><em>REPORTER</em></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#home">HOME</a></li>
+    <li><a href="#report">REPORT</a></li>
+    <li><a href="#emergency">EMERGENCY</a></li>
+    <li><a href="#education">EDUCATION</a></li>
+    <li><a href="#privacy">PRIVACY</a></li>
+    <li><a href="#report" class="nav-cta">⚠ REPORT NOW</a></li>
+  </ul>
+  <button class="hamburger" onclick="toggleNav()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mob-nav" id="mobnav">
+  <a href="#home" onclick="toggleNav()">HOME</a>
+  <a href="#report" onclick="toggleNav()">REPORT ABUSE</a>
+  <a href="#emergency" onclick="toggleNav()">EMERGENCY</a>
+  <a href="#education" onclick="toggleNav()">EDUCATION</a>
+  <a href="#privacy" onclick="toggleNav()">PRIVACY</a>
+</div>
+
+<!-- HERO -->
+<section id="home">
+  <div class="hero-grid"></div>
+  <div class="corner c-tl"></div><div class="corner c-tr"></div>
+  <div class="corner c-bl"></div><div class="corner c-br"></div>
+  <div class="hero-inner">
+    <div class="hero-tag">MISSION CRITICAL — CHILD PROTECTION NETWORK</div>
+    <h1 class="hero-title">PROTECT<br>CHILDREN.<br><span class="amber">REPORT ABUSE.</span></h1>
+    <div class="hero-sub">// STOP EXPLOITATION ONLINE</div>
+    <p class="hero-desc">Every report matters. If you've encountered suspected child sexual abuse material or online exploitation — you have the power and the responsibility to act. Reports are encrypted and forwarded directly to law enforcement worldwide.</p>
+    <div class="hero-btns">
+      <a href="#report" class="btn-red">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        REPORT SUSPECTED ABUSE
+      </a>
+      <a href="#emergency" class="btn-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.12 1.27 2 2 0 012.11.09h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+        EMERGENCY HOTLINES
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-n">24/7</div><div class="stat-l">Reports Forwarded</div></div>
+      <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Anonymous Option</div></div>
+      <div class="stat"><div class="stat-n">50+</div><div class="stat-l">Partner Agencies</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner">⚠ HOSTING OR SHARING CHILD SEXUAL ABUSE MATERIAL IS A FEDERAL CRIME &nbsp;|&nbsp; OFFENDERS FACE MANDATORY IMPRISONMENT &nbsp;|&nbsp; LAW ENFORCEMENT ACTIVELY MONITORS ONLINE ACTIVITY &nbsp;|&nbsp; REPORT SUSPICIOUS CONTENT IMMEDIATELY &nbsp;|&nbsp; ALL REPORTS ARE CONFIDENTIAL &nbsp;|&nbsp; ⚠ HOSTING OR SHARING CHILD SEXUAL ABUSE MATERIAL IS A FEDERAL CRIME &nbsp;|&nbsp; OFFENDERS FACE MANDATORY IMPRISONMENT &nbsp;|&nbsp; LAW ENFORCEMENT ACTIVELY MONITORS &nbsp;|&nbsp;</div>
+</div>
+
+<!-- WARNING -->
+<div class="warn-bar">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffaa00" stroke-width="2">
+    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+  <div>
+    <div class="warn-title">⚠ LEGAL WARNING — FEDERAL CRIME</div>
+    <div class="warn-text">The production, possession, distribution, or viewing of child sexual abuse material (CSAM) is a serious federal and international crime. Offenders face severe criminal prosecution, mandatory imprisonment, and lifetime sex offender registration. Law enforcement agencies actively monitor and investigate online activity related to child exploitation.</div>
+  </div>
+</div>
+
+<!-- REPORT FORM -->
+<section id="report">
+  <div class="sec-tag">SECURE REPORTING</div>
+  <h2 class="sec-title">REPORT SUSPECTED ABUSE</h2>
+  <p class="sec-desc">Your report is encrypted and forwarded directly to law enforcement and child protection authorities. Identity is never required.</p>
+  <div class="form-box">
+    <div class="form-head">
+      <div class="f-dots"><div class="fd fd-r"></div><div class="fd fd-a"></div><div class="fd fd-d"></div></div>
+      <div class="form-title">// SECURE REPORT TERMINAL — AES-256 ENCRYPTED</div>
+    </div>
+    <div class="enc-badge">🔒 ENCRYPTED &amp; SECURE SUBMISSION</div>
+    <div class="anon-row" onclick="toggleAnon()">
+      <div class="tog" id="anontog"></div>
+      <div class="anon-label">
+        <strong id="anonlabel">ANONYMOUS MODE — ENABLED</strong>
+        <span>Your identity will not be recorded or stored</span>
+      </div>
+    </div>
+    <form id="rform" onsubmit="submitForm(event)" class="fgrid">
+      <div class="field">
+        <label>WEBSITE URL / LINK <span class="req">*</span></label>
+        <input type="url" placeholder="https://example.com/suspicious-content" required>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label>PLATFORM / SOURCE <span class="req">*</span></label>
+          <select required>
+            <option value="" disabled selected>Select platform...</option>
+            <option>Telegram</option><option>Website / URL</option>
+            <option>Facebook</option><option>Instagram</option>
+            <option>X / Twitter</option><option>TikTok</option>
+            <option>Discord</option><option>Dark Web / Tor</option>
+            <option>Email / Message</option><option>File Sharing Service</option>
+            <option>Gaming Platform</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>TYPE OF CONTENT <span class="req">*</span></label>
+          <select required>
+            <option value="" disabled selected>Select type...</option>
+            <option>Child Sexual Abuse Material (CSAM)</option>
+            <option>Child Grooming / Solicitation</option>
+            <option>Child Trafficking</option>
+            <option>Inappropriate Contact with Minor</option>
+            <option>Live Streaming Abuse</option>
+            <option>Sextortion of Minor</option>
+            <option>Other Exploitation</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label>TELEGRAM GROUP OWNER ID</label>
+          <input type="text" placeholder="@username or numeric ID e.g. 123456789">
+        </div>
+        <div class="field">
+          <label>TELEGRAM GROUP NAME / LINK</label>
+          <input type="text" placeholder="t.me/groupname or group title">
+        </div>
+      </div>
+      <div class="field">
+        <label>DESCRIPTION OF INCIDENT <span class="req">*</span></label>
+        <textarea placeholder="Describe what you observed — usernames, dates, times, platform details. Do NOT reproduce illegal content." required></textarea>
+      </div>
+      <div class="field">
+        <label>SCREENSHOT EVIDENCE (Optional — no illegal content)</label>
+        <div class="upload-zone" onclick="document.getElementById('fup').click()">
+          <input type="file" id="fup" accept=".png,.jpg,.jpeg,.pdf" onchange="fileChosen(this)">
+          <div class="upload-txt"><strong>Click to upload</strong> or drag and drop</div>
+          <div class="upload-note">PNG / JPG / PDF — Max 10MB. Screenshots of usernames or profiles only.</div>
+        </div>
+      </div>
+      <div class="field contact-field" id="cfield">
+        <label>CONTACT EMAIL (Optional — for follow-up only)</label>
+        <input type="email" placeholder="your@email.com">
+      </div>
+      <div class="form-foot">
+        <div class="form-legal">By submitting, you confirm this is a good-faith report. Deliberately false reports may constitute a criminal offense.</div>
+        <button type="submit" class="btn-red">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          SUBMIT SECURELY
+        </button>
+      </div>
+    </form>
+    <div class="success" id="okbox">
+      <h3>✓ REPORT SUBMITTED</h3>
+      <p>Encrypted and forwarded to relevant authorities. Reference: <strong id="refcode" style="font-family:var(--M)"></strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- EMERGENCY -->
+<section id="emergency">
+  <div class="sec-tag">EMERGENCY RESOURCES</div>
+  <h2 class="sec-title">OFFICIAL REPORTING AGENCIES</h2>
+  <p class="sec-desc">Contact these organizations directly for urgent matters. All agencies handle reports with strict confidentiality.</p>
+  <div class="org-grid">
+    <div class="org-card hot">
+      <div class="org-flag">🇺🇸</div><div class="org-name">NCMEC CyberTipline</div>
+      <div class="org-region">United States — Primary Reporting</div>
+      <div class="org-desc">Federally mandated CyberTipline. All US CSAM reports are legally required to be forwarded here.</div>
+      <div class="org-links"><a href="https://www.cybertipline.org" target="_blank" class="org-a">🌐 cybertipline.org</a><a href="tel:18008435678" class="org-a hl">📞 1-800-843-5678</a></div>
+    </div>
+    <div class="org-card hot">
+      <div class="org-flag">🌍</div><div class="org-name">Internet Watch Foundation</div>
+      <div class="org-region">United Kingdom / Global</div>
+      <div class="org-desc">IWF removes CSAM from the internet globally and accepts reports from anywhere in the world.</div>
+      <div class="org-links"><a href="https://www.iwf.org.uk/report" target="_blank" class="org-a">🌐 iwf.org.uk/report</a></div>
+    </div>
+    <div class="org-card">
+      <div class="org-flag">🇺🇸</div><div class="org-name">FBI — Internet Crime (IC3)</div>
+      <div class="org-region">United States — Federal</div>
+      <div class="org-desc">FBI Internet Crime Complaint Center investigates online child exploitation and coordinates with Interpol.</div>
+      <div class="org-links"><a href="https://www.ic3.gov" target="_blank" class="org-a">🌐 ic3.gov</a><a href="https://tips.fbi.gov" target="_blank" class="org-a">🌐 tips.fbi.gov</a></div>
+    </div>
+    <div class="org-card">
+      <div class="org-flag">🌐</div><div class="org-name">Interpol — Crimes Against Children</div>
+      <div class="org-region">International — 195 Countries</div>
+      <div class="org-desc">Interpol coordinates global law enforcement and operates the ICSE database.</div>
+      <div class="org-links"><a href="https://www.interpol.int/Crimes/Crimes-against-children" target="_blank" class="org-a">🌐 interpol.int</a></div>
+    </div>
+    <div class="org-card">
+      <div class="org-flag">🇬🇧</div><div class="org-name">CEOP — Child Exploitation Online</div>
+      <div class="org-region">United Kingdom — NCA</div>
+      <div class="org-desc">UK national policing command. Report online grooming and abuse directly to CEOP.</div>
+      <div class="org-links"><a href="https://www.ceop.police.uk/safety-centre" target="_blank" class="org-a">🌐 ceop.police.uk</a></div>
+    </div>
+    <div class="org-card">
+      <div class="org-flag">🇦🇺</div><div class="org-name">Australian Federal Police</div>
+      <div class="org-region">Australia — ThinkUKnow</div>
+      <div class="org-desc">AFP's ACCCE unit investigates online child sexual exploitation and accepts Australian reports.</div>
+      <div class="org-links"><a href="https://www.afp.gov.au/report-cybercrime" target="_blank" class="org-a">🌐 afp.gov.au</a></div>
+    </div>
+    <div class="org-card">
+      <div class="org-flag">🇨🇦</div><div class="org-name">Cybertip.ca — Canada</div>
+      <div class="org-region">Canada — Reporting Hotline</div>
+      <div class="org-desc">Canada's national tipline for reporting online sexual exploitation of children.</div>
+      <div class="org-links"><a href="https://www.cybertip.ca" target="_blank" class="org-a">🌐 cybertip.ca</a><a href="tel:18004768800" class="org-a hl">📞 1-800-476-8800</a></div>
+    </div>
+    <div class="org-card">
+      <div class="org-flag">🌍</div><div class="org-name">UNICEF — Child Protection</div>
+      <div class="org-region">Global — Child Welfare</div>
+      <div class="org-desc">UNICEF's global network connects you with local child protection resources in your country.</div>
+      <div class="org-links"><a href="https://www.unicef.org/end-violence" target="_blank" class="org-a">🌐 unicef.org</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- EDUCATION -->
+<section id="education">
+  <div class="sec-tag">KNOW THE SIGNS</div>
+  <h2 class="sec-title">RECOGNIZE &amp; PREVENT EXPLOITATION</h2>
+  <p class="sec-desc">Understanding how online exploitation happens is the first line of defense for protecting children.</p>
+  <div class="edu-grid">
+    <div class="edu-card"><div class="edu-n">01</div><h3>Online Grooming</h3><p>Grooming is when an adult builds trust with a child online with intent to exploit them sexually. It happens gradually through games, social media, or messaging — disguised as friendship.</p></div>
+    <div class="edu-card"><div class="edu-n">02</div><h3>Protecting Children Online</h3><p>Enable parental controls on all devices. Have open conversations about online safety. Know what platforms your children use and set rules about sharing personal information.</p></div>
+    <div class="edu-card"><div class="edu-n">03</div><h3>Sextortion</h3><p>Sextortion occurs when someone threatens to share intimate images of a minor unless demands are met. This growing crime affects children aged 10–17. Immediate reporting is critical.</p></div>
+    <div class="edu-card"><div class="edu-n">04</div><h3>Understanding CSAM</h3><p>Child Sexual Abuse Material is any content that sexually depicts a minor. Viewing, sharing, storing or producing it is a serious criminal offense globally — including illustrated or AI-generated content.</p></div>
+    <div class="edu-card"><div class="edu-n">05</div><h3>Reporting Is Mandatory</h3><p>In many jurisdictions discovering child abuse material creates a legal reporting obligation. Do NOT download or preserve material — note the URL and platform, then report immediately.</p></div>
+    <div class="edu-card"><div class="edu-n">06</div><h3>Talk to Children</h3><p>Trusted adults never ask children for secrets, photos, or personal information online. If anything makes them uncomfortable online, they can tell a trusted adult without fear. Safety first.</p></div>
+  </div>
+  <div class="signs-box">
+    <div class="signs-title">⚠ WARNING SIGNS A CHILD MAY BE AT RISK</div>
+    <div class="signs-grid">
+      <div class="sign">Becoming secretive about online activities or hiding their screen</div>
+      <div class="sign">Unexplained gifts, money, or new devices from unknown sources</div>
+      <div class="sign">Switching apps or closing browser quickly when adults approach</div>
+      <div class="sign">Withdrawal from family, friends, or regular activities</div>
+      <div class="sign">Emotional distress or mood changes after online use</div>
+      <div class="sign">Using devices secretly late at night or in hidden locations</div>
+      <div class="sign">Mentioning new older friends met online they're reluctant to discuss</div>
+      <div class="sign">Unexplained knowledge of sexual topics beyond their age</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section id="privacy">
+  <div class="sec-tag">SYSTEM TRANSPARENCY</div>
+  <h2 class="sec-title">PRIVACY &amp; SAFETY PROTOCOL</h2>
+  <p class="sec-desc">Full transparency on how your report is handled, encrypted, and processed by authorities.</p>
+  <div class="priv-grid">
+    <div class="priv-item"><div class="priv-n">01</div><div><h3>No Illegal Content Stored</h3><p>This platform never stores, hosts, or displays CSAM. All uploads are scanned using PhotoDNA hash-matching. Illegal content is blocked and the attempt automatically reported to law enforcement.</p></div></div>
+    <div class="priv-item"><div class="priv-n">02</div><div><h3>End-to-End Encryption</h3><p>All reports are transmitted using TLS 1.3 and stored with AES-256 encryption. Only authorized law enforcement partners can access submitted reports. Anonymous submissions use zero-knowledge architecture.</p></div></div>
+    <div class="priv-item"><div class="priv-n">03</div><div><h3>Anonymous Reporting Guaranteed</h3><p>When anonymous mode is enabled, no identifying information is collected. IP addresses are never logged for anonymous submissions. Your identity is never shared except as required by law.</p></div></div>
+    <div class="priv-item"><div class="priv-n">04</div><div><h3>Direct Law Enforcement Routing</h3><p>Every report is forwarded to NCMEC, IWF, national cybercrime units, and international law enforcement. Reports are triaged by urgency and jurisdiction for the fastest possible response.</p></div></div>
+    <div class="priv-item"><div class="priv-n">05</div><div><h3>Data Retention Policy</h3><p>Report data retained for 7 years per law enforcement agreements, then permanently deleted. Anonymous reports contain zero personal identifiers. Full GDPR and COPPA compliance maintained.</p></div></div>
+    <div class="priv-item"><div class="priv-n">06</div><div><h3>Good Faith Protection</h3><p>Reporting in good faith is legally protected in most jurisdictions. You cannot be held liable for reporting content you genuinely believed to be illegal. False reports may constitute a criminal offense.</p></div></div>
+  </div>
+</section>
+
+<!-- MUSIC PLAYER -->
+<div id="music">
+  <div class="music-head">
+    <span class="music-label">// MOOD PLAYER</span>
+    <button class="music-close" onclick="document.getElementById('music').style.display='none'">✕</button>
+  </div>
+  <div class="music-modes">
+    <button class="mmode a-sad" id="msad" onclick="setMood('sad')">😢 SAD</button>
+    <button class="mmode" id="magg" onclick="setMood('agg')">😤 AGGRESSIVE</button>
+  </div>
+  <div class="music-track">
+    <div id="tname">Sad Mode — Track 1</div>
+    <div id="tsub">YouTube · Melancholic</div>
+  </div>
+  <button class="music-play" onclick="playTrack()">▶ PLAY ON YOUTUBE</button>
+  <div class="music-note">Opens in new tab</div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="foot-logo">CHILD SAFETY <em>REPORTER</em></div>
+    <div class="foot-copy">// OPERATING IN PARTNERSHIP WITH GLOBAL CHILD PROTECTION AGENCIES // NOT A GOVERNMENT ENTITY</div>
+  </div>
+  <nav class="foot-nav">
+    <a href="#home">HOME</a>
+    <a href="#report">REPORT</a>
+    <a href="#emergency">EMERGENCY</a>
+    <a href="#education">EDUCATION</a>
+    <a href="#privacy">PRIVACY</a>
+  </nav>
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+/* SAFE STORAGE */
+var ls={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* MATRIX RAIN */
+try{
+  var cv=document.getElementById('rain');
+  var cx=cv.getContext('2d');
+  var CH='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+[]{}|';
+  var FS=13,drops=[];
+  function resz(){cv.width=window.innerWidth;cv.height=window.innerHeight;drops=Array(Math.floor(cv.width/FS)).fill(1)}
+  resz();window.addEventListener('resize',resz);
+  setInterval(function(){
+    cx.fillStyle='rgba(0,0,0,0.06)';cx.fillRect(0,0,cv.width,cv.height);
+    cx.font=FS+'px monospace';
+    for(var i=0;i<drops.length;i++){
+      var c=CH[Math.floor(Math.random()*CH.length)];
+      var r=Math.random();
+      cx.fillStyle=r>.98?'#ffaa00':r>.9?'#cc0000':'#3a0000';
+      cx.fillText(c,i*FS,drops[i]*FS);
+      if(drops[i]*FS>cv.height&&Math.random()>.975)drops[i]=0;
+      drops[i]++;
+    }
+  },45);
+}catch(e){}
+
+/* NAV */
+window.toggleNav=function(){document.getElementById('mobnav').classList.toggle('open')};
+
+/* SMOOTH SCROLL */
+document.querySelectorAll('a[href^="#"]').forEach(function(a){
+  a.addEventListener('click',function(e){
+    var t=document.querySelector(this.getAttribute('href'));
+    if(t){e.preventDefault();window.scrollTo({top:t.getBoundingClientRect().top+window.scrollY-60,behavior:'smooth'});document.getElementById('mobnav').classList.remove('open')}
+  });
+});
+
+/* ANON TOGGLE */
+var anonOn=true;
+window.toggleAnon=function(){
+  anonOn=!anonOn;
+  var tog=document.getElementById('anontog');
+  var lbl=document.getElementById('anonlabel');
+  var cf=document.getElementById('cfield');
+  if(anonOn){tog.classList.remove('off');lbl.textContent='ANONYMOUS MODE — ENABLED';lbl.style.color='';if(cf)cf.style.display='none';}
+  else{tog.classList.add('off');lbl.textContent='ANONYMOUS MODE — DISABLED';lbl.style.color='#ffaa00';if(cf)cf.style.display='block';}
+};
+
+/* FILE UPLOAD */
+window.fileChosen=function(inp){
+  if(inp.files&&inp.files[0]){
+    var z=inp.closest('.upload-zone');
+    if(z){var t=z.querySelector('.upload-txt');if(t)t.innerHTML='<strong>✓ '+inp.files[0].name+' loaded</strong>';z.style.borderColor='var(--amber)';}
+  }
+};
+try{
+  var zone=document.querySelector('.upload-zone');
+  if(zone){
+    zone.addEventListener('dragover',function(e){e.preventDefault();zone.style.borderColor='var(--red)'});
+    zone.addEventListener('dragleave',function(){zone.style.borderColor=''});
+    zone.addEventListener('drop',function(e){
+      e.preventDefault();var f=e.dataTransfer.files[0];
+      if(f){var t=zone.querySelector('.upload-txt');if(t)t.innerHTML='<strong>✓ '+f.name+' loaded</strong>';zone.style.borderColor='var(--amber)';}
+    });
+  }
+}catch(e){}
+
+/* FORM SUBMIT */
+window.submitForm=function(e){
+  e.preventDefault();
+  var form=document.getElementById('rform');
+  var ok=document.getElementById('okbox');
+  var ref=document.getElementById('refcode');
+  if(ref)ref.textContent='#CSR-'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).substr(2,4).toUpperCase();
+  if(form){form.style.opacity='.35';form.style.pointerEvents='none';}
+  if(ok){ok.classList.add('show');ok.scrollIntoView({behavior:'smooth',block:'center'});}
+};
+
+/* SCROLL ANIMATIONS */
+try{
+  var ob=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)'}});
+  },{threshold:.08});
+  document.querySelectorAll('.org-card,.edu-card,.priv-item').forEach(function(el){
+    el.style.opacity='0';el.style.transform='translateY(16px)';el.style.transition='opacity .45s ease,transform .45s ease';ob.observe(el);
+  });
+}catch(e){}
+
+/* MOOD PLAYER */
+var tracks={sad:{url:'https://youtu.be/XTUpbWYq-BE?list=RDMMkiYpbqpVN3o',name:'Sad Mode — Track 1',sub:'YouTube · Melancholic'},agg:{url:'https://youtu.be/kiYpbqpVN3o?list=RDMMkiYpbqpVN3o',name:'Aggressive Mode — Track 2',sub:'YouTube · High Energy'}};
+var mood='sad';
+window.setMood=function(m){
+  mood=m;
+  document.getElementById('tname').textContent=tracks[m].name;
+  document.getElementById('tsub').textContent=tracks[m].sub;
+  document.getElementById('msad').className='mmode'+(m==='sad'?' a-sad':'');
+  document.getElementById('magg').className='mmode'+(m==='agg'?' a-agg':'');
+};
+window.playTrack=function(){window.open(tracks[mood].url,'_blank')};
+
+/* EYE COMFORT */
+window.toggleEC=function(){
+  var on=document.body.classList.toggle('ec');
+  var btn=document.getElementById('eyebtn');
+  if(btn)btn.textContent=on?'🔴 HIRUZICK MODE':'👁 EYE COMFORT';
+  ls.set('ec',on?'1':'0');
+};
+if(ls.get('ec')==='1'){document.body.classList.add('ec');var eb=document.getElementById('eyebtn');if(eb)eb.textContent='🔴 HIRUZICK MODE';}
+
+})();
+</script>
+</body>
+</html>
